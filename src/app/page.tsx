@@ -1,152 +1,246 @@
 "use client";
-import { useCallback, useEffect, useState } from "react";
+
+import { useEffect, useState } from "react";
+import Modals from "@/components/modal/modal";
+import { useMovementContext } from "@/context/movement-provider";
+
+interface Game {
+  id: string;
+}
+
+interface MovementContext {
+  games: Game[];
+  fetchData: () => void;
+}
 
 export default function Home() {
-  const [rook, setRook] = useState(["", "", "", "", "", "", "", "", ""]);
-  const [side, setSide] = useState("X");
-  const [check, setCheck] = useState("");
+  const { games, fetchData } = useMovementContext();
+  const [newgame, setNewgame] = useState(true);
+  const [mark, setMarked] = useState<Array<string>>([
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+    "",
+  ]);
+  const player: string = "X";
+  const bot: string = "O";
+  let who_round: string = "X";
+  let winner = "DRAW";
 
-  const winner = useCallback((board: string[]) => {
-    for (let i = 0; i < 9; i += 3) {
-      if (board[i] === board[i + 1] && board[i] === board[i + 2]) {
-        if (board[i] !== "") return board[i];
+  const updateReplay = async (board: string[]) => {
+    try {
+      const res = await fetch("/api/movements", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          movements: JSON.stringify(board),
+          who_round: who_round,
+          game_id: games[0].id,
+        }),
+      });
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+      const data = await res.json();
+      // console.log(data);
+    } catch (error) {
+      console.error("Error updating replay:", error);
+    }
+  };
+
+  const updateGame = async () => {
+    try {
+      const res = await fetch("/api/games", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          id: games[0].id,
+          winner: winner,
+        }),
+      });
+      if (!res.ok) {
+        throw new Error(`HTTP error! status: ${res.status}`);
+      }
+      const data = await res.json();
+      // console.log(data);
+      fetchData();
+    } catch (error) {
+      console.error("Error updating replay:", error);
+    }
+  };
+
+  const minimax = (
+    newBoard: string[],
+    currentPlayer: string
+  ): { index?: number; score: number } => {
+    const availSpots = newBoard.reduce<number[]>((acc, val, idx) => {
+      if (val !== "X" && val !== "O") acc.push(idx);
+      return acc;
+    }, []);
+
+    if (checkWin(newBoard, player)) {
+      return { score: -10 };
+    } else if (checkWin(newBoard, bot)) {
+      return { score: 10 };
+    } else if (availSpots.length === 0) {
+      return { score: 0 };
+    }
+
+    const moves: { index: number; score: number }[] = [];
+    for (let i = 0; i < availSpots.length; i++) {
+      const move: { index: number; score: number } = {
+        index: availSpots[i],
+        score: 0,
+      };
+
+      newBoard[availSpots[i]] = currentPlayer;
+
+      if (currentPlayer === bot) {
+        const result = minimax(newBoard, player);
+        move.score = result.score;
+      } else {
+        const result = minimax(newBoard, bot);
+        move.score = result.score;
+      }
+
+      newBoard[availSpots[i]] = "";
+
+      moves.push(move);
+    }
+
+    let bestMove: number = 0;
+    if (currentPlayer === bot) {
+      let bestScore = -10000;
+      for (let i = 0; i < moves.length; i++) {
+        if (moves[i].score > bestScore) {
+          bestScore = moves[i].score;
+          bestMove = i;
+        }
+      }
+    } else {
+      let bestScore = 10000;
+      for (let i = 0; i < moves.length; i++) {
+        if (moves[i].score < bestScore) {
+          bestScore = moves[i].score;
+          bestMove = i;
+        }
       }
     }
-    for (let i = 0; i < 3; i++) {
-      if (board[i] === board[i + 3] && board[i] === board[i + 6]) {
-        if (board[i] !== "") return board[i];
-      }
-    }
-    if (board[0] === board[4] && board[0] === board[8]) {
-      if (board[4] !== "") return board[0];
-    }
-    if (board[2] === board[4] && board[2] === board[6]) {
-      if (board[4] !== "") return board[2];
-    }
-    return null;
-  }, []);
+    return moves[bestMove];
+  };
 
-  const isMovesLeft = useCallback(() => {
-    for (let i = 0; i < 9; i++) {
-      if (rook[i] === "") {
+  const checkWin = (board: string[], player: string): boolean => {
+    const winLines = [
+      [0, 1, 2],
+      [3, 4, 5],
+      [6, 7, 8],
+      [0, 3, 6],
+      [1, 4, 7],
+      [2, 5, 8],
+      [0, 4, 8],
+      [2, 4, 6],
+    ];
+    for (let i = 0; i < winLines.length; i++) {
+      const [a, b, c] = winLines[i];
+      if (board[a] === player && board[b] === player && board[c] === player) {
         return true;
       }
     }
     return false;
-  }, [rook]);
+  };
 
-  const handleClick = (e: number) => {
-    if (rook[e] === "") {
-      let obj = rook.slice();
-      obj[e] = side;
-      setRook(obj);
-      setSide(side === "X" ? "O" : "X");
+  const botMove = (data: string[]) => {
+    const newMark = data;
+    who_round = bot;
+    const bestSpot = minimax(newMark, bot).index;
+    if (bestSpot !== undefined) {
+      newMark[bestSpot] = bot;
+      setMarked(newMark);
+      updateReplay(newMark);
     }
   };
 
-  const minimax = useCallback(
-    (board: string[], depth: number, isMaximizing: boolean) => {
-      const currentWinner = winner(board);
-      if (currentWinner === "X") return -10 + depth;
-      if (currentWinner === "O") return 10 - depth;
-      if (!isMovesLeft()) return 0;
+  const handleClick = (e: number) => {
+    fetchData();
+    who_round = player;
+    const data = [...mark];
+    if (data[e] === "") {
+      data[e] = player;
+      setMarked(data);
+      updateReplay(data);
+      botMove(data);
+      fetchData();
+    }
+  };
 
-      if (isMaximizing) {
-        let bestScore = -Infinity;
-        for (let i = 0; i < 9; i++) {
-          if (board[i] === "") {
-            board[i] = "O";
-            let score = minimax(board, depth + 1, false);
-            board[i] = "";
-            bestScore = Math.max(score, bestScore);
-          }
-        }
-        return bestScore;
-      } else {
-        let bestScore = Infinity;
-        for (let i = 0; i < 9; i++) {
-          if (board[i] === "") {
-            board[i] = "X";
-            let score = minimax(board, depth + 1, true);
-            board[i] = "";
-            bestScore = Math.min(score, bestScore);
-          }
-        }
-        return bestScore;
-      }
-    },
-    [winner, isMovesLeft]
-  );
+  const addGame = () => {
+    setNewgame(true);    
+    console.log("add game");
+  };
 
-  const findBestMove = useCallback(
-    (board: string[]) => {
-      let bestMove = -1;
-      let bestScore = -Infinity;
-      for (let i = 0; i < 9; i++) {
-        if (board[i] === "") {
-          board[i] = "O";
-          let score = minimax(board, 0, false);
-          board[i] = "";
-          if (score > bestScore) {
-            bestScore = score;
-            bestMove = i;
-          }
-        }
+  const outOfGame = () => {
+    let out = false;
+    mark.map((obj) => {
+      if (obj === "") {
+        out = true;
       }
-      return bestMove;
-    },
-    [minimax]
-  );
+    });
+    return out;
+  };
+
+  const setclose=()=>{
+    setNewgame(false);
+    setMarked(["", "", "", "", "", "", "", "", ""]);
+  }
+
+  const setopen=()=>{
+    setNewgame(true);
+  }
 
   useEffect(() => {
-    const currentWinner = winner(rook);
-    if (currentWinner) {
-      setCheck(currentWinner);
-    } else if (!isMovesLeft()) {
-      setCheck("Tie");
-    } else if (side === "O") {
-      const bestMove = findBestMove(rook);
-      if (bestMove !== -1) {
-        let obj = rook.slice();
-        obj[bestMove] = "O";
-        setRook(obj);
-        setSide("X");
+    if (checkWin(mark, player)) {
+      winner = player;
+      updateGame();
+      addGame();
+      console.log("player win");
+    } else if (checkWin(mark, bot)) {
+      winner = bot;
+      updateGame();
+      addGame();
+      console.log("bot win");
+    } else {
+      if (!outOfGame()) {
+        winner = "DRAW";
+        addGame();
+        updateGame(); 
       }
     }
-  }, [rook, side, winner, isMovesLeft, findBestMove]);
-
-  useEffect(() => {
-    if (check) {
-      alert(
-        check === "Tie"
-          ? "Game Over! It's a tie!"
-          : "Game Over " + check + " won!"
-      );
-      setRook(["", "", "", "", "", "", "", "", ""]);
-      setCheck("");
-      setSide("");
-    }
-  }, [check]);
+  }, [mark]);
 
   return (
-    <div>
-      <h1 className="text-center pt-10 text-5xl text-white font-extrabold">Tic-Tac-Toe</h1>
-      <div className="flex justify-center top-1/2 translate-y-1/2">
-        <div className="items-center grid grid-cols-3 bg-white">
-          {check}
-          {rook.map((obj, i) => (
-            <div className="flex justify-center items-center" key={i}>
-              <div
-                className="flex w-40 h-40 border-2 border-stone-950 justify-center items-center"
-                onClick={() => handleClick(i)}
-              >
-                <h1 className="text-6xl content-center text-black font-extrabold">
-                  {obj}
-                </h1>
-              </div>
-            </div>
-          ))}
-        </div>
+    <div className="p-5 w-full h-full flex justify-center items-center content-center">
+      { newgame && <Modals setClose={setclose} setopen={setopen}/>}
+      <div className="grid grid-cols-3 gap-3 h-full aspect-square">
+        {mark.map((obj, index) => (
+          <div
+            key={index}
+            className="font-extrabold aspect-square text-3xl w-full h-full flex items-center content-center justify-center border-2 border-black"
+            onClick={() => {
+              handleClick(index);
+            }}
+          >
+            {obj}
+          </div>
+        ))}
       </div>
     </div>
   );
