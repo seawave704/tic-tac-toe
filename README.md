@@ -1,36 +1,65 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Tic-Tac-Toe
 
-## Getting Started
+เกม XO หรือที่รู้จักกันว่า Tic-Tac-Toe เป็นเกมกระดานสำหรับผู้เล่นสองคน โดยผู้เล่นจะใช้สัญลักษณ์ "X" และอีกฝั่งจะเป็นบอทใช้สัญลักษณ์ "O" ผู้เล่นจะสลับกันวางสัญลักษณ์ของตนลงในตาราง 3x3 เป้าหมายคือการวางสัญลักษณ์ของตนให้ได้สามตัวติดกันในแนวนอน แนวตั้ง หรือแนวทแยง ผู้ที่ทำได้ก่อนจะเป็นผู้ชนะ หากตารางเต็มโดยไม่มีผู้ชนะเกมจะเสมอ 
 
-First, run the development server:
+โดยบอทที่ใช้จะใช้อัลกอลิธึม minimax สำหรับการหาค่าที่ดีที่สุดในการเดินแต่ละตา
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## สารบัญ
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- [เริ่มต้น](#เริ่มต้น)
+- [วิธีการเล่น](#วิธีการเล่น)
+- [คุณสมบัติ](#คุณสมบัติ)
+- [เทคโนโลยีที่ใช้](#เทคโนโลยีที่ใช้)
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+## วิธีการเล่น
 
-## Learn More
+1. เปิดแอปพลิเคชันและเลือกว่าจะเล่นกับคอมพิวเตอร์หรือผู้เล่นอื่น
+2. ผู้เล่นจะได้เป็น X คลิกในช่องว่างบนตาราง 3x3 เพื่อวาง X และ O จะเป็นของบอท
+3. เป้าหมายคือการเรียง X หรือ O ของคุณให้ได้สามตัวติดกันในแนวนอน แนวตั้ง หรือแนวทแยง
+4. เกมจะจบลงเมื่อมีผู้เล่นชนะหรือทุกช่องเต็มโดยไม่มีผู้ชนะ (เสมอ)
+5. คลิกปุ่ม start เพื่อเริ่มเกมใหม่
 
-To learn more about Next.js, take a look at the following resources:
+## เริ่มต้น
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+เพื่อให้ได้สำเนาของโปรเจคนี้และรันบนเครื่องของคุณ ทำตามขั้นตอนดังนี้:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+1. **โคลน Repository:**
 
-## Deploy on Vercel
+    ```bash
+    git clone https://github.com/seawave704/tic-tac-toe.git
+    cd tic-tac-toe
+    ```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+2. **ติดตั้ง dependencies:**
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+    ```bash
+    npm install
+    ```
+
+3. **รันเซิร์ฟเวอร์พัฒนา:**
+
+    ```bash
+    npm run dev
+        or
+    npm run build & npm run start
+    ```
+
+4. **เปิดเบราว์เซอร์ของคุณ:**
+
+    ไปที่ [http://localhost:3000](http://localhost:3000) เพื่อดูแอปพลิเคชัน
+
+## คุณสมบัติ
+
+- เกม Tic-Tac-Toe แบบคลาสสิก
+- ออกแบบให้ตอบสนองต่ออุปกรณ์
+- อินเทอร์เฟซที่ใช้งานง่าย
+
+## เทคโนโลยีที่ใช้
+
+- Next.js
+- React
+- TypeScript
+- Tailwind CSS
+- sqlite
+- prisma
